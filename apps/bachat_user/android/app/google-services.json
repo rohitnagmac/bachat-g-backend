@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "151142422589",
+    "project_id": "bachat-g-e72a3",
+    "storage_bucket": "bachat-g-e72a3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:151142422589:android:290fdd8c8730d0c6f67254",
+        "android_client_info": {
+          "package_name": "com.bachatg.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "151142422589-i9592musm5jj2maak8a4udtabj36r64b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDeAcw3Q0uougTwSlf40jlLWToyjaA_E8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "151142422589-i9592musm5jj2maak8a4udtabj36r64b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

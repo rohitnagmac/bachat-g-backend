@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
+const { sendOTP } = require('../services/emailService');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -11,11 +12,12 @@ const generateToken = (id) => {
 };
 
 const googleAuth = async (req, res) => {
-    const { token } = req.body;
+    const { token, deviceInfo } = req.body;
+    const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     console.log('=== Google Auth Request ===');
     console.log('Received token:', token ? 'Present' : 'Missing');
-    console.log('Token length:', token?.length);
+    // console.log('Device Info:', deviceInfo);
 
     try {
         console.log('Verifying token with Google...');
@@ -37,10 +39,18 @@ const googleAuth = async (req, res) => {
                 email,
                 fullName: name, // Default to Google name initially
                 profilePicture: picture,
+                deviceInfo,
+                ipAddress,
+                lastLogin: Date.now()
             });
             console.log('New user created:', user._id);
         } else {
             console.log('Existing user found:', user._id);
+            // Update latest info
+            user.deviceInfo = deviceInfo || user.deviceInfo;
+            user.ipAddress = ipAddress;
+            user.lastLogin = Date.now();
+            await user.save();
         }
 
         const responseData = {
@@ -151,4 +161,76 @@ const updateFcmToken = async (req, res) => {
     }
 };
 
-module.exports = { googleAuth, googleAuthWeb, updateProfile, updateFcmToken };
+const requestOtp = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Set OTP and expiration (10 minutes)
+        user.otp = otp;
+        user.otpExpires = Date.now() + 10 * 60 * 1000;
+        await user.save();
+
+        console.log(`=== OTP REQUEST ===`);
+        console.log(`Email: ${email}`);
+        console.log(`OTP: ${otp}`);
+        console.log(`===================`);
+
+        const emailSent = await sendOTP(email, otp);
+
+        if (emailSent) {
+            res.json({ message: 'OTP sent to your email.' });
+        } else {
+            res.status(500).json({ message: 'Failed to send email OTP. Check server logs.' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const verifyOtp = async (req, res) => {
+    const { email, otp } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.otp !== otp) {
+            return res.status(400).json({ message: 'Invalid OTP' });
+        }
+
+        if (user.otpExpires < Date.now()) {
+            return res.status(400).json({ message: 'OTP expired' });
+        }
+
+        // Clear OTP
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        await user.save();
+
+        res.json({
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            role: user.role,
+            token: generateToken(user._id),
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { googleAuth, googleAuthWeb, updateProfile, updateFcmToken, requestOtp, verifyOtp };

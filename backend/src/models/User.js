@@ -24,6 +24,27 @@ const userSchema = mongoose.Schema({
     },
     fcmToken: {
         type: String
+    },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    },
+    otp: {
+        type: String
+    },
+    otpExpires: {
+        type: Date
+    },
+    deviceInfo: {
+        type: Object, // Stores device model, manuf, etc.
+        default: {}
+    },
+    ipAddress: {
+        type: String
+    },
+    lastLogin: {
+        type: Date
     }
 }, {
     timestamps: true

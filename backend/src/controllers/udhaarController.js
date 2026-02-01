@@ -39,11 +39,11 @@ const createUdhaar = async (req, res) => {
 
 // Get user's udhaar entries
 const getUdhaars = async (req, res) => {
-    const { type, isSettled } = req.query;
+    const { type, isSettled, startDate, endDate } = req.query;
 
     console.log('=== Get Udhaar Request ===');
     console.log('User:', req.user._id);
-    console.log('Filters:', { type, isSettled });
+    console.log('Filters:', { type, isSettled, startDate, endDate });
 
     try {
         const filter = { user: req.user._id };
@@ -56,6 +56,13 @@ const getUdhaars = async (req, res) => {
         // Filter by settled status
         if (isSettled !== undefined) {
             filter.isSettled = isSettled === 'true';
+        }
+
+        // Date range filter
+        if (startDate || endDate) {
+            filter.date = {};
+            if (startDate) filter.date.$gte = new Date(startDate);
+            if (endDate) filter.date.$lte = new Date(endDate);
         }
 
         const udhaars = await Udhaar.find(filter).sort({ date: -1 });
