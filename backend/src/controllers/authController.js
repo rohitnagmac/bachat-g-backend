@@ -184,11 +184,18 @@ const requestOtp = async (req, res) => {
         console.log(`OTP: ${otp}`);
         console.log(`===================`);
 
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            console.error('ERROR: SMTP credentials missing in environment variables');
+            return res.status(500).json({ message: 'Server configuration error: SMTP missing' });
+        }
+
         const emailSent = await sendOTP(email, otp);
 
         if (emailSent) {
+            console.log(`Successfully sent OTP to ${email}`);
             res.json({ message: 'OTP sent to your email.' });
         } else {
+            console.error(`Failed to send email to ${email}. Check SMTP settings.`);
             res.status(500).json({ message: 'Failed to send email OTP. Check server logs.' });
         }
     } catch (error) {
